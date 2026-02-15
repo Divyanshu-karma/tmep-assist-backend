@@ -60,7 +60,7 @@ def analyze_trademark(request: TrademarkRequest):
         result = generate_rag_answer(
             query=query,
             doc_version=request.doc_version,
-            top_k=5
+            top_k=3
         )
 
         print("Step 4: RAG completed")
