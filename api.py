@@ -45,19 +45,25 @@ class TrademarkRequest(BaseModel):
 
 @app.post("/analyze")
 def analyze_trademark(request: TrademarkRequest):
+
     try:
-        # Step 1: Convert JSON → structured object
+        print("Step 1: Received request")
+
         app_obj = TrademarkApplication(request.data)
 
-        # Step 2: Structured object → deterministic query
+        print("Step 2: Structured object built")
+
         query = structured_object_to_query(app_obj)
 
-        # Step 3: Generate grounded + risk-classified analysis
+        print("Step 3: Query built")
+
         result = generate_rag_answer(
             query=query,
-            doc_version=request.doc_version    
-            top_k=3
+            doc_version=request.doc_version,
+            top_k=5
         )
+
+        print("Step 4: RAG completed")
 
         return {
             "status": "success",
@@ -65,10 +71,8 @@ def analyze_trademark(request: TrademarkRequest):
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+        print("ERROR:", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # api.py
