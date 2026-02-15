@@ -201,13 +201,13 @@ Instructions:
     # Step 3: Groq API call (Llama 3.3 70B)
     try:
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",  # <--- UPDATED HERE
+            model="llama-3.1-8b-instant",  # <--- UPDATED HERE
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0.15,
-            max_tokens=2048,
+            max_tokens=700,
             top_p=0.95,
         )
 
