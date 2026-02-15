@@ -2,6 +2,9 @@ import os
 from typing import List, Dict
 from groq import Groq
 from dotenv import load_dotenv
+import concurrent.futures
+import logging
+
 
 from src.vectorstore.weaviate_search import similarity_search
 from src.rag.risk_engine import apply_risk_engine
@@ -197,29 +200,58 @@ Instructions:
 
 
 
-    
-    # Step 3: Groq API call (Llama 3.3 70B)
-    try:
-        response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",  # <--- UPDATED HERE
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.15,
-            max_tokens=700,
-            top_p=0.95,
-        )
+    def call_groq(system_prompt, user_prompt):
+    return client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.15,
+        max_tokens=700,
+        top_p=0.95,
+    )
 
-        # return response.choices[0].message.content
+
+    try:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(call_groq, system_prompt, user_prompt)
+            response = future.result(timeout=60)  # 🔥 60-second hard timeout
+
         raw_output = response.choices[0].message.content
         final_output = apply_risk_engine(raw_output)
         return final_output
 
+    except concurrent.futures.TimeoutError:
+        logging.error("Groq request timed out")
+        return "LLM request timed out. Please retry."
 
-    except Exception:
-        # ✅ Do not leak internal errors in legal system
+    except Exception as e:
+        logging.error(f"Groq failure: {str(e)}", exc_info=True)
         return "Error generating analysis. Please review logs."
+
+    # Step 3: Groq API call (Llama 3.3 70B)
+    # try:
+    #     response = client.chat.completions.create(
+    #         model="llama-3.1-8b-instant",  # <--- UPDATED HERE
+    #         messages=[
+    #             {"role": "system", "content": system_prompt},
+    #             {"role": "user", "content": user_prompt},
+    #         ],
+    #         temperature=0.15,
+    #         max_tokens=700,
+    #         top_p=0.95,
+    #     )
+
+    #     # return response.choices[0].message.content
+    #     raw_output = response.choices[0].message.content
+    #     final_output = apply_risk_engine(raw_output)
+    #     return final_output
+
+
+    # except Exception:
+    #     # ✅ Do not leak internal errors in legal system
+    #     return "Error generating analysis. Please review logs."
 
 
 # -------------------------------------------------
