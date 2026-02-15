@@ -18,7 +18,7 @@ client = Groq(
     api_key=os.environ.get("GROQ_API_KEY"),
 )
 
-MAX_CHUNK_CHARS = 1500  # ✅ Prevent token explosion from long TMEP chunks
+MAX_CHUNK_CHARS = 1000  # ✅ Prevent token explosion from long TMEP chunks
 # -------------------------------------------------
 # Helper: Build grounded context
 # -------------------------------------------------
