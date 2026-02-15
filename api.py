@@ -40,6 +40,7 @@ app = FastAPI(
 
 class TrademarkRequest(BaseModel):
     data: Dict[str, Any]
+    doc_version: str
 
 
 @app.post("/analyze")
@@ -54,7 +55,7 @@ def analyze_trademark(request: TrademarkRequest):
         # Step 3: Generate grounded + risk-classified analysis
         result = generate_rag_answer(
             query=query,
-            doc_version=TMEP_DOC_VERSION,  # 🔒 Enforced version isolation
+            doc_version=request.doc_version    
             top_k=3
         )
 
