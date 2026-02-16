@@ -201,7 +201,7 @@ Instructions:
 
 
     def call_groq(system_prompt, user_prompt):
-    return client.chat.completions.create(
+        return client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
             {"role": "system", "content": system_prompt},
