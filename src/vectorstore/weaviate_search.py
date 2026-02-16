@@ -78,11 +78,10 @@
 
 from weaviate.classes.query import Filter
 from typing import List, Dict
-from .weaviate_client import get_client, CLASS_NAME, EXPECTED_EMBEDDING_DIM
-from src.embeddings.query_embedding import embed_query
+from .weaviate_client import get_client, CLASS_NAME
 
 
-MIN_SIMILARITY = 0.72
+MIN_SIMILARITY = 0.70
 
 
 def similarity_search(
@@ -91,37 +90,20 @@ def similarity_search(
     doc_version: str = None,
     debug: bool = False,
 ) -> List[Dict]:
-    """
-    Perform vector similarity search over TMEP chunks.
-
-    - Uses E5 query embedding
-    - Enforces doc_version filtering (legal isolation)
-    - Converts cosine distance -> similarity
-    - Enforces minimum similarity threshold
-    """
 
     if not doc_version:
-        raise ValueError("doc_version must be provided to prevent cross-version contamination.")
+        raise ValueError("doc_version must be provided.")
 
     client = get_client()
 
     try:
         collection = client.collections.get(CLASS_NAME)
 
-        # ✅ Query embedding
-        query_vector = embed_query(query)
-
-        # ✅ Query embedding dimension validation
-        if len(query_vector) != EXPECTED_EMBEDDING_DIM:
-            raise ValueError("Query embedding dimension mismatch.")
-
-        # ✅ Mandatory version filter
         filters = Filter.by_property("doc_version").equal(doc_version)
 
-
-        # ✅ Vector search
-        response = collection.query.near_vector(
-            near_vector=query_vector,
+        # 🔥 Auto-embedding query search
+        response = collection.query.near_text(
+            query=query,
             limit=top_k,
             filters=filters,
             return_metadata=["distance"],
@@ -131,12 +113,10 @@ def similarity_search(
 
         for obj in response.objects:
             distance = obj.metadata.distance
-            # similarity = 1 - distance if distance is not None else None
             similarity = max(0.0, 1 - distance) if distance is not None else None
 
-
-            result_obj = {
-                "chunk_id": obj.properties["chunk_id"],  # ✅ Traceability
+            results.append({
+                "chunk_id": obj.properties["chunk_id"],
                 "text": obj.properties["text"],
                 "section_id": obj.properties["section_id"],
                 "section_path": obj.properties["section_path"],
@@ -145,14 +125,10 @@ def similarity_search(
                 "source": obj.properties["source"],
                 "distance": distance,
                 "similarity": similarity,
-            }
+            })
 
-            results.append(result_obj)
-
-        # ✅ Explicit sort (never assume implicit ordering)
         results.sort(key=lambda x: x["similarity"], reverse=True)
 
-        # ✅ Enforce minimum similarity threshold
         results = [
             r for r in results
             if r["similarity"] is not None and r["similarity"] >= MIN_SIMILARITY
@@ -161,14 +137,12 @@ def similarity_search(
         if not results:
             raise ValueError("No sufficiently relevant TMEP sections found.")
 
-        # ✅ Optional retrieval debug output
         if debug:
             print("\n--- Retrieval Debug ---")
             for r in results:
                 print(
                     f"{r['section_id']} | "
-                    f"Similarity: {round(r['similarity'], 4)} | "
-                    f"Distance: {round(r['distance'], 4)}"
+                    f"Similarity: {round(r['similarity'], 4)}"
                 )
             print("-----------------------\n")
 
@@ -176,3 +150,4 @@ def similarity_search(
 
     finally:
         client.close()
+
