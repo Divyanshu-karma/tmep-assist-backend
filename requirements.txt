@@ -4,6 +4,4 @@ pydantic
 weaviate-client
 requests
 numpy
-sentence-transformers
-torch
 groq
