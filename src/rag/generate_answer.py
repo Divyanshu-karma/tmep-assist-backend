@@ -18,7 +18,7 @@ client = Groq(
     api_key=os.environ.get("GROQ_API_KEY"),
 )
 
-MAX_CHUNK_CHARS = 1000  # ✅ Prevent token explosion from long TMEP chunks
+MAX_CHUNK_CHARS = 800  # ✅ Prevent token explosion from long TMEP chunks
 # -------------------------------------------------
 # Helper: Build grounded context
 # -------------------------------------------------
@@ -202,15 +202,15 @@ Instructions:
 
     def call_groq(system_prompt, user_prompt):
         return client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        temperature=0.15,
-        max_tokens=700,
-        top_p=0.95,
-    )
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.15,
+            max_tokens=500,
+            top_p=0.95,
+        )
 
 
     try:
